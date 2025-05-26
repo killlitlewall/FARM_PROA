@@ -1,0 +1,202 @@
+---
+title: "PROA"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(shiny)
+
+J01<-fread("C:/Users/Usuario/Documents/PROYECTOS/PROA/FARM_PROA/data/J01.csv",encoding = "Latin-1")
+
+lista_rangos<-unique(J01$rango[J01$rango!="TOTAL J01"])
+lista_AS<-unique(J01$AS[J01$AS!="Extremadura"])
+```
+
+Row {data-height=100}
+-----------------------------------------------------------------------
+
+```{r}
+
+selectInput("RG", "Mostrar información...",
+                  choices = c("Por rango de edad", "Total"),
+                  selected = "Por rango de edad")
+
+
+
+selectInput("AS", "Area de salud:",
+                  choices = sort(unique(J01$AS)),
+                  selected = "Extremadura")
+
+
+```
+
+
+
+Row {data-height=100}
+-----------------------------------------------------------------------
+### Envases totales {text.size=50}
+```{r}
+
+renderValueBox({
+  valueBox(
+    value =format(J01[AS==input$AS & rango=="TOTAL J01","ENVASES_t"], big.mark = ".", decimal.mark = ","),
+    color="lightgreen"
+  )
+})
+```
+
+### DDD Total
+```{r}
+renderValueBox({
+  valueBox(
+    value =format(J01[AS==input$AS & rango=="TOTAL J01","DDD_T"], big.mark = ".", decimal.mark = ","),
+    color="lightgreen"
+  )
+})
+
+
+```
+
+### Precio Total
+```{r}
+renderValueBox({
+  valueBox(
+    value =format(J01[AS==input$AS & rango=="TOTAL J01","PRECIO_T"], big.mark = ".", decimal.mark = ","),
+    color="lightgreen"
+  )
+})
+
+
+```
+
+```{r}
+ datos0<-reactive({if (input$RG!="Total"){J01[rango %in% lista_rangos]} else {J01[rango=="TOTAL J01"]}})
+ datos<-reactive({if (input$AS=="Extremadura"){ datos0()[AS %in% lista_AS]} else { datos0()[AS==input$AS]}})
+
+```
+
+Row {data-height=400}
+-----------------------------------------------------------------------
+
+### Distribucion porcentual de envases por area de salud y rango
+```{r}
+
+renderPlotly({
+ 
+# Crear el gráfico de barras horizontales apiladas
+grafico <- ggplot(datos()[, porcentaje:=round(ENVASES_t/sum(ENVASES_t)*100,1)], aes(x = AS, y = porcentaje, fill = rango)) +
+  geom_bar(stat = "identity", position = "stack") +
+  coord_flip() +  # Hacer que las barras sean horizontales
+  labs(
+    #title = "Distribución porcentual por área de salud y rango",
+    subtitle = "Porcentaje sobre el total global",
+    x = "Area de salud",
+    y = "Porcentaje (%)",
+    fill = "Rango de edad"
+  ) +
+  theme_minimal() +
+  # Aumentar el tamaño de fuente de los títulos de los ejes
+  theme(
+    axis.title.x = element_text(size = 10, face = "bold", margin = margin(t = 10)),
+    axis.title.y = element_text(size = 10, face = "bold", margin = margin(r = 10)),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  ) +
+  # Agregar etiquetas de porcentaje dentro de cada segmento
+  geom_text(
+    aes(label = sprintf("%.1f%%", porcentaje)),
+    position = position_stack(vjust = 0.5),
+    size = 2.5,
+    angle = 270,  # Rotar el texto 90 grados (orientación vertical)
+    hjust = 0.5  # Ajustar la posición horizontal del texto
+  ) +
+  # Paleta de colores agradable
+  scale_fill_brewer(palette = "Set2")
+
+# Mostrar el gráfico
+ggplotly(grafico)
+
+})
+```
+
+### Distribucion porcentual de DDT por area de salud y rango
+```{r}
+
+renderPlotly({
+ 
+# Crear el gráfico de barras horizontales apiladas
+grafico <- ggplot(datos(), aes(x = AS, y = DDD_T, fill = rango)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(
+    x = "Area de salud",
+    y = "DDD_T",
+    fill = "Rango de edad"
+  ) +
+  theme_minimal() +
+  # Aumentar el tamaño de fuente de los títulos de los ejes
+  theme(
+    axis.title.x = element_text(size = 10, face = "bold", margin = margin(t = 10)),
+    axis.title.y = element_text(size = 10, face = "bold", margin = margin(r = 10)),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  ) +
+  # Agregar etiquetas de porcentaje dentro de cada segmento
+  geom_text(
+    aes(label = round(DDD_T/1000,1)),
+    position = position_stack(vjust = 0.5),
+    size = 2.5,
+    angle = 270,  # Rotar el texto 90 grados (orientación vertical)
+    hjust = 0.5  # Ajustar la posición horizontal del texto
+  ) +
+  # Paleta de colores agradable
+  scale_fill_brewer(palette = "Set2")
+
+# Mostrar el gráfico
+ggplotly(grafico)
+
+})
+
+```
+### Distribucion porcentual de precio por area de salud y rango
+```{r}
+renderPlotly({
+ 
+# Crear el gráfico de barras horizontales apiladas
+grafico <- ggplot(datos(), aes(x = AS, y = DDD_T, fill = rango)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(
+    x = "Area de salud",
+    y = "DDD_T",
+    fill = "Rango de edad"
+  ) +
+  theme_minimal() +
+  # Aumentar el tamaño de fuente de los títulos de los ejes
+  theme(
+    axis.title.x = element_text(size = 10, face = "bold", margin = margin(t = 10)),
+    axis.title.y = element_text(size = 10, face = "bold", margin = margin(r = 10)),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7)
+  ) +
+  # Agregar etiquetas de porcentaje dentro de cada segmento
+  geom_text(
+    aes(label = round(DDD_T/1000,1)),
+    position = position_stack(vjust = 0.5),
+    size = 2.5,
+    angle = 270,  # Rotar el texto 90 grados (orientación vertical)
+    hjust = 0.5  # Ajustar la posición horizontal del texto
+  ) +
+  # Paleta de colores agradable
+  scale_fill_brewer(palette = "Set2")
+
+# Mostrar el gráfico
+ggplotly(grafico)
+
+})
+```
