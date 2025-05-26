@@ -4,16 +4,22 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: scroll
+    self_contained: true 
 ---
 
 ```{r setup, include=FALSE}
+if (!require("plotly")) install.packages("plotly")
+if (!require("DT")) install.packages("DT")
+if (!require("htmlwidgets")) install.packages("htmlwidgets")
+
 library(flexdashboard)
-library(data.table)
-library(ggplot2)
 library(plotly)
+library(DT)
+library(htmlwidgets)
+library(data.table)
 library(shiny)
 
-J01<-fread("C:/Users/Usuario/Documents/PROYECTOS/PROA/FARM_PROA/data/J01.csv",encoding = "Latin-1")
+J01<-fread("data/J01.csv",encoding = "Latin-1")
 
 lista_rangos<-unique(J01$rango[J01$rango!="TOTAL J01"])
 lista_AS<-unique(J01$AS[J01$AS!="Extremadura"])
